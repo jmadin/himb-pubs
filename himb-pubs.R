@@ -60,7 +60,6 @@ has_himb <- function(authorships){
 }
 
 himb_idx <- map_lgl(works, function(w) has_himb(w$authorships))
-
 himb_works <- works[himb_idx]
 
 cat("HIMB works detected:", length(himb_works), "\n")
@@ -111,10 +110,6 @@ cat(paste0(seq_along(refs), ". ", refs, collapse="\n"))
 ###
 
 
-library(dplyr)
-library(purrr)
-library(stringr)
-library(stringi)
 
 # ---------------------------------------------------
 # Convert himb_works list to data frame
@@ -122,7 +117,10 @@ library(stringi)
 
 works_df <- tibble(
   title = sapply(himb_works, function(w) w$title),
-  year = sapply(himb_works, function(w) w$publication_year),
+  year = sapply(himb_works, function(w) {
+    y <- w$publication_year
+    if(is.null(y)) return(NA_real_) else return(as.numeric(y))
+  }),
   doi = sapply(himb_works, function(w) gsub("https://doi.org/", "", w$doi)),
   type = sapply(himb_works, function(w) w$type),
   authors = sapply(himb_works, function(w) {
@@ -134,6 +132,12 @@ works_df <- tibble(
     }
   })
 )
+
+# Remove works with missing year (optional)
+works_df <- works_df %>% filter(!is.na(year))
+
+# Sort most recent first
+works_df <- works_df %>% arrange(desc(year))
 
 # ---------------------------------------------------
 # Sort most recent first
@@ -171,19 +175,6 @@ markdown_list <- map_chr(1:nrow(works_df), function(i){
 
 markdown_output <- paste(markdown_list, collapse="\n")
 
-# ---------------------------------------------------
-# Print Markdown
-# ---------------------------------------------------
-cat(markdown_output)
-
-# ---------------------------------------------------
-# File path for output Markdown
-# ---------------------------------------------------
-output_file <- "README.md"
-
-# ---------------------------------------------------
-# Write Markdown string to file
-# ---------------------------------------------------
-writeLines(markdown_output, con = output_file)
-
-cat("HIMB publication list saved to:", output_file, "\n")
+# Save to file
+writeLines(markdown_output, con = "README.md")
+cat("HIMB publication list saved to: HIMB_publications.md\n")
