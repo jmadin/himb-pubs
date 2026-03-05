@@ -79,7 +79,7 @@ himb_search_results <- flatten(himb_search_results)
 # 3. Combine results
 # ---------------------------------------
 
-all_works <- c(uh_works, himb_search_results)
+all_works <- c(works, himb_search_results)
 
 # ---------------------------------------
 # 4. Deduplicate by OpenAlex work ID
@@ -192,6 +192,44 @@ md <- map_chr(1:nrow(works_df), function(i){
 
 markdown_output <- paste(md, collapse="\n")
 
-writeLines(markdown_output, "HIMB_publications.md")
+writeLines(markdown_output, "README.md")
 
 cat("Saved HIMB publication list to HIMB_publications.md\n")
+
+
+#
+
+
+
+# install if needed
+
+library(dplyr)
+library(ggplot2)
+
+# -------------------------------------
+# Count publications per year
+# -------------------------------------
+
+pubs_per_year <- works_df %>%
+  filter(!is.na(year)) %>%
+  group_by(year) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  arrange(year)
+
+# -------------------------------------
+# Plot
+# -------------------------------------
+
+p <- ggplot(pubs_per_year, aes(x = year, y = n)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "HIMB Publications per Year",
+    x = "Year",
+    y = "Number of Publications"
+  ) +
+  theme_minimal()
+
+p + geom_smooth(se = FALSE)
+
+ggsave("HIMB_publications_per_year.png", p, width = 8, height = 5, dpi = 300)
