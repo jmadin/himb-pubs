@@ -140,11 +140,6 @@ works_df <- works_df %>% filter(!is.na(year))
 works_df <- works_df %>% arrange(desc(year))
 
 # ---------------------------------------------------
-# Sort most recent first
-# ---------------------------------------------------
-works_df <- works_df %>% arrange(desc(year))
-
-# ---------------------------------------------------
 # Assign colors by document type
 # Customize as desired
 # ---------------------------------------------------
