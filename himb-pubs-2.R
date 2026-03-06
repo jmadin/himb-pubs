@@ -49,12 +49,12 @@ fetch_openalex <- function(query){
 # OpenAlex institution ID for University of Hawai‘i at Mānoa
 UHM_ID <- "I117965899"
 
-uh_works <- fetch_openalex(
-  paste0("institutions.id:", UHM_ID)
-)
-
+# uh_works <- fetch_openalex(
+#   paste0("institutions.id:", UHM_ID)
+# )
+# 
 uh_works <- load("all_works.RData")
-
+uh_works <- works
 # ---------------------------------------
 # 2. Direct affiliation search for HIMB
 # ---------------------------------------
@@ -63,6 +63,9 @@ himb_variants <- c(
   "Hawaii Institute of Marine Biology",
   "Hawai‘i Institute of Marine Biology",
   "Hawai'i Institute of Marine Biology",
+  "Moku o Lo'e",
+  "Moku o Loe",
+  "Moku o Loʻe",
   "HIMB"
 )
 
@@ -79,7 +82,7 @@ himb_search_results <- flatten(himb_search_results)
 # 3. Combine results
 # ---------------------------------------
 
-all_works <- c(works, himb_search_results)
+all_works <- c(uh_works, himb_search_results)
 
 # ---------------------------------------
 # 4. Deduplicate by OpenAlex work ID
@@ -99,35 +102,53 @@ works <- all_works[unique_indices]
 # 5. Detect HIMB affiliations
 # ---------------------------------------
 
-normalize_text <- function(x){
-  
-  x %>%
-    stringi::stri_trans_general("Latin-ASCII") %>%
-    tolower()
-}
-
 is_himb <- function(w){
   
-  auths <- w$authorships
+  # Normalize text: remove okina etc, lowercase
+  normalize <- function(x){
+    stringi::stri_trans_general(x, "Latin-ASCII") |>
+      tolower()
+  }
   
-  for(a in auths){
+  # Keywords to identify HIMB
+  himb_terms <- c(
+    "hawaii institute of marine biology",
+    "hawai'i institute of marine biology",
+    "himb",
+    "kaneohe",
+    "moku o loe",
+    "moku o lo'e"
+  )
+  
+  # Loop over authors
+  for(a in w$authorships){
     
-    if(!is.null(a$raw_affiliation_strings)){
+    # ---- raw affiliation strings ----
+    if(!is.null(a$raw_affiliation_strings) && length(a$raw_affiliation_strings) > 0){
+      aff <- normalize(paste(a$raw_affiliation_strings, collapse=" "))
+      if(any(str_detect(aff, himb_terms))) return(TRUE)
+    }
+    
+    # ---- institutions (safely) ----
+    if(!is.null(a$institutions) && length(a$institutions) > 0){
+      inst_names <- map_chr(
+        a$institutions,
+        ~ if(!is.null(.x$display_name)) .x$display_name else NA_character_
+      )
+      inst <- normalize(paste(inst_names, collapse=" "))
       
-      aff <- normalize_text(paste(a$raw_affiliation_strings, collapse=" "))
-      
-      if(str_detect(aff,"hawaii institute of marine biology") |
-         str_detect(aff,"himb") |
-         str_detect(aff,"kaneohe")){
-        return(TRUE)
-      }
+      if(any(str_detect(inst, himb_terms))) return(TRUE)
     }
   }
   
-  FALSE
+  return(FALSE)
 }
 
-himb_works <- keep(works, is_himb)
+# ----------------------------
+# Filter your works
+# ----------------------------
+# `works` is your OpenAlex works list
+himb_works <- purrr::keep(works, is_himb)
 
 cat("Total HIMB works detected:", length(himb_works), "\n")
 
