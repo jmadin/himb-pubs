@@ -1,3 +1,7 @@
+# HIMB pubs
+
+![](/Users/jmadin/Desktop/himb-pubs/himb-pubs/HIMB_publications_per_year.png) 
+
 - <span style='color:gray'>2026 – Peter F. Cowman et al. – [Modern Coral Taxonomy Requires Reproducible Data Alongside Field Observations—Comments on Veron et al. (2025)](https://doi.org/10.3390/d18020060) (article)</span>
 - <span style='color:gray'>2026 – C. Mark Eakin et al. – [Severe and widespread coral reef damage during the 2014-2017 Global Coral Bleaching Event](https://doi.org/10.1038/s41467-025-67506-w) (article)</span>
 - <span style='color:gray'>2026 – Carl G. Meyer – [‘Sharktober’: tiger shark parturition drives seasonality in shark bite incidents in Hawaiian waters](https://doi.org/10.3389/fmars.2025.1587902) (article)</span>
