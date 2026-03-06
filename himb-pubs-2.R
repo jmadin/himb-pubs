@@ -9,6 +9,7 @@ library(dplyr)
 library(purrr)
 library(stringr)
 library(stringi)
+library(ggplot2)
 
 # ---------------------------------------
 # Helper: fetch all pages from OpenAlex
@@ -157,75 +158,63 @@ cat("Total HIMB works detected:", length(himb_works), "\n")
 # ---------------------------------------
 
 works_df <- tibble(
-  title = map_chr(himb_works, ~.x$title %||% ""),
-  year = map_dbl(himb_works, ~.x$publication_year %||% NA),
-  doi = map_chr(himb_works, ~str_replace(.x$doi %||% "", "https://doi.org/","")),
-  type = map_chr(himb_works, ~.x$type %||% "other"),
   authors = map_chr(himb_works, function(w){
-    
     a <- map_chr(w$authorships, ~.x$author$display_name)
-    
     if(length(a) > 3){
       paste0(a[1], " et al.")
     } else {
       paste(a, collapse=", ")
     }
-  })
+  }),
+  year = map_dbl(himb_works, ~.x$publication_year %||% NA),
+  title = map_chr(himb_works, ~.x$title %||% ""),
+  journal = map_chr(himb_works, function(w){
+    if(!is.null(w$host_venue$display_name)){
+      w$host_venue$display_name
+    } else {
+      "Unknown Venue"
+    }
+  }),
+  doi = map_chr(himb_works, function(w){
+    if(!is.null(w$doi) && nchar(w$doi) > 0){
+      paste0("[", w$doi, "](https://doi.org/", w$doi, ")")
+    } else {
+      ""
+    }
+  }),
+  type = map_chr(himb_works, ~.x$type %||% "other")
 )
 
-# ---------------------------------------
-# 7. Sort newest → oldest
-# ---------------------------------------
-
+# ----------------------------
+# Sort newest → oldest
+# ----------------------------
 works_df <- works_df %>%
   filter(!is.na(year)) %>%
   arrange(desc(year))
 
-# ---------------------------------------
-# 8. Color document types
-# ---------------------------------------
-
-doc_colors <- c(
-  "journal-article"="green",
-  "book-chapter"="blue",
-  "dataset"="orange",
-  "monograph"="purple"
-)
-
-works_df$color <- doc_colors[works_df$type]
-works_df$color[is.na(works_df$color)] <- "gray"
-
-# ---------------------------------------
-# 9. Generate Markdown
-# ---------------------------------------
-
-md <- map_chr(1:nrow(works_df), function(i){
-  
+# ----------------------------
+# Generate Markdown references
+# ----------------------------
+markdown_list <- map_chr(1:nrow(works_df), function(i){
   paste0(
-    "- <span style='color:", works_df$color[i], "'>",
-    works_df$year[i], " – ",
-    works_df$authors[i], " – ",
-    "[", works_df$title[i], "](https://doi.org/", works_df$doi[i], ")",
-    " (", works_df$type[i], ")",
-    "</span>"
+    works_df$authors[i], " (", works_df$year[i], "). ",
+    works_df$title[i], ". ",
+    works_df$journal[i], ". ",
+    works_df$doi[i],
+    " (", works_df$type[i], ")"
   )
 })
 
-markdown_output <- paste(md, collapse="\n")
+markdown_output <- paste(markdown_list, collapse = "\n\n")
 
-writeLines(markdown_output, "README.md")
-
-cat("Saved HIMB publication list to HIMB_publications.md\n")
-
-
-#
-
+# ----------------------------
+# Save to file
+# ----------------------------
+writeLines(markdown_output, "HIMB_publications_references.md")
+cat("Saved HIMB publication references (newest→oldest) to HIMB_publications_references.md\n")
 
 
 # install if needed
-
-library(dplyr)
-library(ggplot2)
 
 # -------------------------------------
 # Count publications per year
@@ -255,3 +244,4 @@ ggplot(pubs_per_year, aes(x = year, y = n)) +
 
 
 ggsave("HIMB_publications_per_year.png", width = 8, height = 4, dpi = 300)
+
