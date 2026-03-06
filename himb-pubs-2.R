@@ -162,10 +162,8 @@ library(purrr)
 library(stringr)
 library(stringi)
 
-# Convert HIMB works to dataframe
-# Helper function to convert "First Last" or "First Middle Last" to "Last F.M."
+# Helper function: convert "First Middle Last" → "Last F.M."
 format_author <- function(name){
-  # Split name by spaces
   parts <- str_split(name, " +")[[1]]
   if(length(parts) == 0) return(name)
   last <- parts[length(parts)]
@@ -179,9 +177,12 @@ format_author <- function(name){
 works_df <- tibble(
   authors = map_chr(himb_works, function(w){
     a <- map_chr(w$authorships, ~.x$author$display_name)
-    # Convert each to Last F.M.
     formatted <- map_chr(a, format_author)
-    paste(formatted, collapse = ", ")
+    if(length(formatted) > 5){
+      paste0(paste(formatted[1:5], collapse=", "), " et al.")
+    } else {
+      paste(formatted, collapse=", ")
+    }
   }),
   year = map_dbl(himb_works, ~.x$publication_year %||% NA),
   title = map_chr(himb_works, ~.x$title %||% ""),
@@ -263,5 +264,5 @@ ggplot(pubs_per_year, aes(x = year, y = n)) +
   geom_smooth(se = FALSE)
 
 
-ggsave("figure.png", width = 8, height = 4, dpi = 300)
+ggsave("figure.png", width = 8, height = 2, dpi = 300)
 
