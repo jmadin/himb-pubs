@@ -157,20 +157,41 @@ cat("Total HIMB works detected:", length(himb_works), "\n")
 # 6. Convert to dataframe
 # ---------------------------------------
 
+library(dplyr)
+library(purrr)
+library(stringr)
+library(stringi)
+
+# Convert HIMB works to dataframe
+# Helper function to convert "First Last" or "First Middle Last" to "Last F.M."
+format_author <- function(name){
+  # Split name by spaces
+  parts <- str_split(name, " +")[[1]]
+  if(length(parts) == 0) return(name)
+  last <- parts[length(parts)]
+  initials <- paste0(substr(parts[-length(parts)],1,1), collapse="")
+  paste0(last, " ", initials)
+}
+
+# ----------------------------
+# Build works_df
+# ----------------------------
 works_df <- tibble(
   authors = map_chr(himb_works, function(w){
     a <- map_chr(w$authorships, ~.x$author$display_name)
-    if(length(a) > 3){
-      paste0(a[1], " et al.")
-    } else {
-      paste(a, collapse=", ")
-    }
+    # Convert each to Last F.M.
+    formatted <- map_chr(a, format_author)
+    paste(formatted, collapse = ", ")
   }),
   year = map_dbl(himb_works, ~.x$publication_year %||% NA),
   title = map_chr(himb_works, ~.x$title %||% ""),
   journal = map_chr(himb_works, function(w){
-    if(!is.null(w$host_venue$display_name)){
+    if(!is.null(w$host_venue$display_name) && w$host_venue$display_name != ""){
       w$host_venue$display_name
+    } else if(!is.null(w$primary_location$source$display_name) && w$primary_location$source$display_name != ""){
+      w$primary_location$source$display_name
+    } else if(!is.null(w$biblio$journal_title) && w$biblio$journal_title != ""){
+      w$biblio$journal_title
     } else {
       "Unknown Venue"
     }
@@ -185,9 +206,8 @@ works_df <- tibble(
   type = map_chr(himb_works, ~.x$type %||% "other")
 )
 
-# ----------------------------
+
 # Sort newest → oldest
-# ----------------------------
 works_df <- works_df %>%
   filter(!is.na(year)) %>%
   arrange(desc(year))
@@ -210,7 +230,7 @@ markdown_output <- paste(markdown_list, collapse = "\n\n")
 # ----------------------------
 # Save to file
 # ----------------------------
-writeLines(markdown_output, "HIMB_publications_references.md")
+writeLines(markdown_output, "README.md")
 cat("Saved HIMB publication references (newest→oldest) to HIMB_publications_references.md\n")
 
 
@@ -243,5 +263,5 @@ ggplot(pubs_per_year, aes(x = year, y = n)) +
   geom_smooth(se = FALSE)
 
 
-ggsave("HIMB_publications_per_year.png", width = 8, height = 4, dpi = 300)
+ggsave("figure.png", width = 8, height = 4, dpi = 300)
 
