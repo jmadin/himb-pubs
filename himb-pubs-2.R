@@ -228,8 +228,7 @@ p <- ggplot(pubs_per_year, aes(x = year, y = n)) +
     x = "Year",
     y = "Number of Publications"
   ) +
-  theme_minimal()
+  theme_minimal() + 
+  geom_smooth(se = FALSE)
 
-p + geom_smooth(se = FALSE)
-
-ggsave("HIMB_publications_per_year.png", p, width = 8, height = 5, dpi = 300)
+ggsave("HIMB_publications_per_year.png", p, width = 8, height = 4, dpi = 300)
