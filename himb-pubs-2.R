@@ -210,7 +210,10 @@ library(ggplot2)
 # Count publications per year
 # -------------------------------------
 
-pubs_per_year <- works_df %>%
+articles_df <- works_df %>%
+  filter(type == "article")
+
+pubs_per_year <- articles_df %>%
   filter(!is.na(year)) %>%
   group_by(year) %>%
   summarise(n = n(), .groups = "drop") %>%
@@ -220,15 +223,14 @@ pubs_per_year <- works_df %>%
 # Plot
 # -------------------------------------
 
-p <- ggplot(pubs_per_year, aes(x = year, y = n)) +
+ggplot(pubs_per_year, aes(x = year, y = n)) +
   geom_line() +
   geom_point() +
   labs(
-    title = "HIMB Publications per Year",
     x = "Year",
     y = "Number of Publications"
   ) +
-  theme_minimal() + 
   geom_smooth(se = FALSE)
 
-ggsave("HIMB_publications_per_year.png", p, width = 8, height = 4, dpi = 300)
+
+ggsave("HIMB_publications_per_year.png", width = 8, height = 4, dpi = 300)
