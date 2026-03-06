@@ -211,7 +211,7 @@ library(ggplot2)
 # -------------------------------------
 
 articles_df <- works_df %>%
-  filter(type == "article")
+  filter(type %in% c("article", "preprint"))
 
 pubs_per_year <- articles_df %>%
   filter(!is.na(year)) %>%
